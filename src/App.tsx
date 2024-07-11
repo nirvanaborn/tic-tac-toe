@@ -15,6 +15,9 @@ const CheckerboardItemDiv = styled.div<CheckerboardItemDivProps>`
     ${(props) => (props.$currentChess ? 'opacity: 0!important;' : '')};
     background-image: url(${(props) => (props.$currentPlayer === 'x' ? x_png : o_png)});
   }
+  &:before {
+    background-image: url(${(props) => (props.$currentChess === 'x' ? x_png : o_png)});
+  }
 `;
 
 function App() {
@@ -78,6 +81,36 @@ function App() {
     ) {
       message.success(`Player ${current_player} winning this game!`);
       set_winner(current_player);
+      temp_chess.current = '';
+      checkerboard_info.current = {
+        '0-0': {
+          current_chess: '#',
+        },
+        '0-1': {
+          current_chess: '#',
+        },
+        '0-2': {
+          current_chess: '#',
+        },
+        '1-0': {
+          current_chess: 'W',
+        },
+        '1-1': {
+          current_chess: 'I',
+        },
+        '1-2': {
+          current_chess: 'N',
+        },
+        '2-0': {
+          current_chess: '#',
+        },
+        '2-1': {
+          current_chess: '#',
+        },
+        '2-2': {
+          current_chess: '#',
+        },
+      };
     }
   }, []);
   const click_checkerboard_fn = useCallback(
@@ -129,7 +162,7 @@ function App() {
         <div className='checkerboard'>
           {Object.keys(checkerboard_info.current).map((item: any, index: number) => (
             <CheckerboardItemDiv
-              className={`checkerboard-item ${temp_chess.current === item ? 'flicker' : ''} ${
+              className={`checkerboard-item ${temp_chess.current === item ? 'temp-status' : ''} ${
                 checkerboard_info.current[item].current_chess === 'x' ? 'x-chess' : checkerboard_info.current[item].current_chess === 'o' ? 'o-chess' : ''
               } ${winner ? 'has-winner' : ''}`}
               key={index}
@@ -138,7 +171,9 @@ function App() {
               onClick={() => {
                 !winner && click_checkerboard_fn(item);
               }}
-            />
+            >
+              {winner ? checkerboard_info.current[item].current_chess : ''}
+            </CheckerboardItemDiv>
           ))}
         </div>
         <div className='current-player'>{winner ? `WINNER: ${winner}` : `CURRENT PLAYER: ${current_player}`}</div>
