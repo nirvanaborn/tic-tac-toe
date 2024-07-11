@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Button } from 'antd';
+import { Button, message } from 'antd';
 import styled from 'styled-components';
 import './App.less';
 import x_png from './assets/x.png';
@@ -19,11 +19,12 @@ const CheckerboardItemDiv = styled.div<CheckerboardItemDivProps>`
 
 function App() {
   const [current_player, set_current_player] = useState<any>();
-  const [o_list, set_o_list] = useState<any>([]);
-  const [x_list, set_x_list] = useState<any>([]);
-  const [temp_chess, set_temp_chess] = useState<any>();
+  const [winner, set_winner] = useState<any>();
   const init_flag = useRef<boolean>(false);
   const checkerboard_info = useRef<any>({});
+  const o_list = useRef<any>([]);
+  const x_list = useRef<any>([]);
+  const temp_chess = useRef<any>();
   const init_fn = useCallback(() => {
     const temp_arr: any = {};
     const init_status = {
@@ -36,8 +37,10 @@ function App() {
     }
     checkerboard_info.current = temp_arr;
     set_current_player('');
-    set_o_list([]);
-    set_x_list([]);
+    set_winner('');
+    temp_chess.current = '';
+    o_list.current = [];
+    x_list.current = [];
   }, []);
   const choose_first_player_random_fn = useCallback(() => {
     const player = Math.round(Math.random()) ? 'x' : 'o';
@@ -73,7 +76,8 @@ function App() {
         checkerboard_info.current['2-0'].current_chess === checkerboard_info.current['1-1'].current_chess &&
         checkerboard_info.current['1-1'].current_chess === checkerboard_info.current['0-2'].current_chess)
     ) {
-      alert(current_player);
+      message.success(`Player ${current_player} winning this game!`);
+      set_winner(current_player);
     }
   }, []);
   const click_checkerboard_fn = useCallback(
@@ -81,42 +85,43 @@ function App() {
       if (checkerboard_info.current[item].current_chess) {
         return;
       }
-      const o_length = o_list.length || 0;
-      const x_length = x_list.length || 0;
+      const o_length = o_list.current.length || 0;
+      const x_length = x_list.current.length || 0;
       checkerboard_info.current = { ...checkerboard_info.current, [item]: { current_chess: current_player } };
-      if (current_player === 'o') {
-        set_o_list((old_list: any) => [...old_list, item]);
-        set_current_player('x');
-      } else {
-        set_x_list((old_list: any) => [...old_list, item]);
-        set_current_player('o');
+      if (temp_chess.current) {
+        checkerboard_info.current = { ...checkerboard_info.current, [temp_chess.current]: { current_chess: '' } };
+        if (current_player === 'o') {
+          o_list.current = [...o_list.current.slice(1, o_list.current.length - 1), item];
+          o_list.current.shift();
+          o_list.current = [...o_list.current, item];
+        } else {
+          x_list.current = [...x_list.current.slice(1, x_list.current.length - 1), item];
+          o_list.current.shift();
+          o_list.current = [...o_list.current, item];
+        }
       }
       if (o_length + x_length > 4) {
         if (current_player === 'o') {
-          set_temp_chess(x_list[0]);
+          temp_chess.current = x_list.current[0];
         } else {
-          set_temp_chess(o_list[0]);
-        }
-        if (o_length + x_length > 5) {
-          checkerboard_info.current = { ...checkerboard_info.current, [temp_chess]: { current_chess: '' } };
-          if (current_player === 'o') {
-            set_o_list((old_o_list: any) => {
-              old_o_list.shift();
-              return old_o_list;
-            });
-            set_temp_chess(x_list[0]);
-          } else {
-            set_x_list((old_x_list: any) => {
-              old_x_list.shift();
-              return old_x_list;
-            });
-            set_temp_chess(o_list[0]);
-          }
+          temp_chess.current = o_list.current[0];
         }
       }
       validation_winner_fn(current_player);
+      if (winner) {
+        return;
+      }
+      setTimeout(() => {
+        if (current_player === 'o') {
+          o_list.current = [...o_list.current, item];
+          set_current_player('x');
+        } else {
+          x_list.current = [...x_list.current, item];
+          set_current_player('o');
+        }
+      }, 1);
     },
-    [current_player, o_list, temp_chess, validation_winner_fn, x_list]
+    [current_player, o_list, temp_chess, validation_winner_fn, winner, x_list]
   );
   const checkerboard_ele = useMemo(
     () => (
@@ -124,25 +129,25 @@ function App() {
         <div className='checkerboard'>
           {Object.keys(checkerboard_info.current).map((item: any, index: number) => (
             <CheckerboardItemDiv
-              className={`checkerboard-item ${temp_chess === item ? 'flicker' : ''} ${
+              className={`checkerboard-item ${temp_chess.current === item ? 'flicker' : ''} ${
                 checkerboard_info.current[item].current_chess === 'x' ? 'x-chess' : checkerboard_info.current[item].current_chess === 'o' ? 'o-chess' : ''
-              }`}
+              } ${winner ? 'has-winner' : ''}`}
               key={index}
               $currentPlayer={current_player}
               $currentChess={checkerboard_info.current[item].current_chess}
               onClick={() => {
-                click_checkerboard_fn(item);
+                !winner && click_checkerboard_fn(item);
               }}
             />
           ))}
         </div>
-        <div className='current-player'>CURRENT PLAYER: {current_player}</div>
+        <div className='current-player'>{winner ? `WINNER: ${winner}` : `CURRENT PLAYER: ${current_player}`}</div>
         <Button type='dashed' onClick={restart_game_fn}>
           Restart
         </Button>
       </div>
     ),
-    [click_checkerboard_fn, current_player, restart_game_fn, temp_chess]
+    [click_checkerboard_fn, current_player, restart_game_fn, winner]
   );
   useEffect(() => {
     if (!init_flag.current) {
@@ -158,7 +163,7 @@ function App() {
           <div className='player-list o-list'>
             <div className='title'>'O' LIST: </div>
             <ul>
-              {o_list.map((o_item: any, index: number) => (
+              {o_list.current.map((o_item: any, index: number) => (
                 <li key={index}>{o_item}</li>
               ))}
             </ul>
@@ -167,7 +172,7 @@ function App() {
           <div className='player-list x-list'>
             <div className='title'>'X' LIST: </div>
             <ul>
-              {x_list.map((x_item: any, index: number) => (
+              {x_list.current.map((x_item: any, index: number) => (
                 <li key={index}>{x_item}</li>
               ))}
             </ul>

@@ -29,7 +29,7 @@
         width: 300px;
         display: flex;
         flex-wrap: wrap;
-        background-color: #fefefe;
+        background-color: hwb(0 100% 0%);
         box-shadow: 10px 10px 5px 0px rgba(0, 0, 0, 0.1), -10px -10px 5px 0px rgba(0, 0, 0, 0.3);
         margin-bottom: 24px;
 
@@ -45,6 +45,17 @@
           background-repeat: no-repeat;
           background-position: center;
           border: 1px solid #000;
+          transition: all 0.5s ease-in-out;
+          opacity: 1;
+
+          &.has-winner {
+
+            &,
+            &:hover,
+            &:after {
+              cursor: default !important;
+            }
+          }
 
           &:nth-child(1),
           &:nth-child(2),
@@ -78,7 +89,7 @@
             background-image: url(./assets/o.png);
           }
 
-          &:after {
+          &:not(.o-chess, .x-chess):after {
             position: absolute;
             content: '';
             width: 50px;
@@ -87,7 +98,7 @@
             left: calc(50% - 25px);
             border-radius: 50%;
             opacity: 0;
-            cursor: pointer;
+            cursor: cell;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -96,12 +107,16 @@
             background-repeat: no-repeat;
           }
 
-          &:hover:after {
-            animation: chess-hover 1s ease-in-out alternate infinite;
+          &:not(.has-winner):hover:after {
+            animation: chess-hover 0.2s ease-in-out infinite alternate;
           }
 
           &.flicker {
-            animation: flicker 1.5s ease-in-out infinite;
+            opacity: 0.1 !important;
+
+            &:after {
+              cursor: not-allowed;
+            }
           }
         }
       }
@@ -112,19 +127,13 @@
     }
   }
 
-  @keyframes flicker {}
-
   @keyframes chess-hover {
     0% {
       opacity: 0;
     }
 
-    50% {
-      opacity: 1;
-    }
-
     100% {
-      opacity: 0;
+      opacity: 1;
     }
   }
 }
